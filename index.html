@@ -1,0 +1,294 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>¿Mereces el videojuego?</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+<canvas id="confetti" class="confetti-canvas"></canvas>
+<div class="container">
+  <div class="header">
+    <div class="title">¿Mereces el videojuego?</div>
+    <div class="progress" id="progress"></div>
+  </div>
+
+  <!-- INTRO -->
+  <section class="intro show" id="intro">
+    <div class="badge">Bienvenido</div>
+    <h2 class="question-text" style="margin-top:12px;">
+      FELIZ CUMPLEAÑOS VALENTE!!<br>
+      Que bueno que encontraste la segunda parte del regalo.<br>
+      Ahí te va el reto 🎁
+    </h2>
+    <div class="controls">
+      <button id="startBtn" class="primary">Comenzar</button>
+    </div>
+    <p class="small">Responde correctamente cada pregunta para avanzar. Si fallas demasiadas veces… <b>el portal se cierra 30 min</b> 😈</p>
+  </section>
+
+  <!-- LOCK -->
+  <section class="lock" id="lock">
+    <h2>😅 Has fallado demasiadas veces.</h2>
+    <div> <b>No se vale hacer trampa!</b> </div>
+    <div class="timer" id="lockTimer">00:00</div>
+    <div class="note">Vuelve cuando el contador llegue a cero.</div>
+    <div class="controls" style="margin-top:16px;">
+      <button id="checkAgain" class="secondary">Revisar de nuevo</button>
+    </div>
+  </section>
+
+  <!-- QUESTION -->
+  <section class="question" id="quiz">
+    <div id="qTextWrap">
+      <h2 id="qText" class="question-text"></h2>
+    </div>
+    <div class="options" id="options"></div>
+    <div class="feedback" id="feedback"></div>
+    <div class="controls">
+      <button id="nextBtn" class="primary" disabled>Siguiente ➜</button>
+      <button id="retryBtn" class="secondary hidden">Intentar de nuevo</button>
+    </div>
+  </section>
+
+  <!-- FINAL -->
+  <section class="final" id="final">
+    <h2>🎉 ¡Felicidades!</h2>
+    <div class="prize">¡Felicidades! Ganaste el acceso al videojuego, el código es <b>XYZ123</b></div>
+    <p class="small">Puedes cerrar esta ventana y entregar el código.</p>
+  </section>
+</div>
+
+<script>
+// ====== Config ======
+const QUESTIONS = [{"q": "Según Schur, ¿cuáles son las cuatro preguntas que resumen la filosofía moral?", "a": ["¿Qué es bueno? ¿Quién soy? ¿Dónde estoy? ¿Cuándo actúo?", "¿Qué estamos haciendo? ¿Por qué lo hacemos? ¿Hay algo mejor que podamos hacer? ¿Por qué es mejor?", "¿Qué haría Aristóteles?", "¿Quién tiene la culpa?"], "c": 1}, {"q": "¿Qué muestra el ejemplo del “día perfecto” al inicio del libro?", "a": ["Que con buenas intenciones siempre se logra hacer el bien", "Que incluso las buenas intenciones pueden tener consecuencias negativas", "Que solo los millonarios pueden ser éticos", "Que la vaca feliz es un mito urbano"], "c": 1}, {"q": "¿Qué simboliza la “Goodness Accountant”?", "a": ["Un ángel guardián", "Una figura imaginaria que mide lo bueno o malo de nuestras acciones", "Un personaje real de The Good Place", "Un programa de contabilidad"], "c": 1}, {"q": "¿Por qué Schur prefiere traducir eudaimonia como “flourishing” y no “happiness”?", "a": ["Porque “flourishing” implica plenitud y desarrollo, no solo placer", "Porque la palabra “happiness” es demasiado antigua", "Porque Aristóteles odiaba la palabra felicidad", "Porque suena más elegante"], "c": 0}, {"q": "Según Aristóteles, ¿cómo se adquieren las virtudes humanas?", "a": ["Nacemos con ellas", "Las recibimos de los dioses", "Se aprenden por hábito y práctica constante", "Se compran en Amazon"], "c": 2}, {"q": "¿Qué representa el “Golden Mean”?", "a": ["El punto medio entre el exceso y la carencia de una virtud", "La línea de metro dorada de Atenas", "Un ideal religioso", "El promedio de felicidad mundial"], "c": 0}, {"q": "En el ejemplo de la ira, ¿qué es el exceso y la falta de esta virtud?", "a": ["Demasiado enojo = violencia; muy poco = apatía o cobardía", "Demasiado enojo = liderazgo; poco enojo = sabiduría", "Enfado siempre es malo", "Ninguna de las anteriores"], "c": 0}, {"q": "¿Por qué Schur compara la virtud con tocar la gaita?", "a": ["Porque ambas requieren práctica constante para dominarse", "Porque Aristóteles amaba la música", "Porque su amigo Rob toca gaita", "Porque el sonido es insoportable, como la ética"], "c": 0}, {"q": "¿Qué considera Judith Shklar el peor vicio?", "a": ["La soberbia", "La pereza", "La crueldad", "La envidia"], "c": 2}, {"q": "¿Qué dilema ético ilustra el “Trolley Problem”?", "a": ["Elegir entre causar daño directo o permitir un daño mayor", "Decidir quién maneja el tren", "Demostrar que todos somos egoístas", "Un problema técnico de transporte"], "c": 0}, {"q": "¿Por qué Schur usa humor o ejemplos absurdos?", "a": ["Para mostrar que la ética cotidiana puede ser tan ridícula como compleja", "Para burlarse de los filósofos", "Para atraer lectores adolescentes", "Para llenar páginas"], "c": 0}, {"q": "¿Qué aprendió Schur al crear The Good Place?", "a": ["Que casi todo lo que hacemos tiene un componente ético", "Que la gente prefiere los villanos", "Que la moral no sirve para televisión", "Que los filósofos son buenos actores"], "c": 0}, {"q": "¿Qué diferencia menciona entre “morals” y “ethics”?", "a": ["Que son distintas, pero él decide usarlas igual porque la vida es corta", "Que los “morals” son de ricos", "Que solo los lingüistas saben la diferencia", "Que uno es americano y otro británico"], "c": 0}, {"q": "¿Cuál es la principal crítica al concepto del “mean” de Aristóteles?", "a": ["Que es difícil saber cuál es el punto medio exacto en cada caso", "Que solo aplica a filósofos", "Que fue inventado en Alemania", "Que contradice la física"], "c": 0}, {"q": "¿Qué rol cumple el fracaso en el proceso moral, según Schur?", "a": ["Es inevitable y útil para aprender a ser mejores", "Se debe evitar a toda costa", "Es una señal de debilidad", "No tiene relación con la ética"], "c": 0}, {"q": "¿Quién es “stupid Wendy”?", "a": ["Una amiga ficticia que da malos consejos", "Una filósofa real", "Una vaca triste", "Una compañera de The Good Place"], "c": 0}, {"q": "¿Qué opina Schur sobre el “runner’s high”?", "a": ["Que es una experiencia espiritual", "Que es mentira, correr es horrible", "Que Aristóteles lo inventó", "Que representa la virtud del esfuerzo"], "c": 1}, {"q": "¿Qué virtud personal exagera Schur en su anécdota del volumen en fiestas?", "a": ["Valentía", "Dutifulness (obediencia a las reglas)", "Generosidad", "Templanza"], "c": 1}, {"q": "Según Schur, ¿qué sería una virtud de un cuchillo?", "a": ["Ser filoso y balanceado", "No cortar a nadie", "Servir para untar mantequilla", "Estar limpio"], "c": 0}, {"q": "¿Qué broma hace sobre los filósofos alemanes?", "a": ["Que se preguntan “por qué hay cosas”", "Que todos son fascistas", "Que solo hablan de cocina", "Que nadie los entiende"], "c": 0}, {"q": "(Footnote) ¿Qué tipo de personas dice que no se preocupan por la ética?", "a": ["Tramposos, mentirosos y “Wolf of Wall Street maniacs”", "Monjes", "Niños pequeños", "Profesores"], "c": 0}, {"q": "(Footnote) ¿Por qué decide ignorar la diferencia entre “morals” y “ethics”?", "a": ["Porque no vale la pena discutirlo", "Porque son sinónimos científicos", "Porque Aristóteles lo dijo", "Porque Google lo confunde"], "c": 0}, {"q": "(Footnote) ¿Qué broma hace sobre el costo de actuar éticamente?", "a": ["Que la ética es gratis… salvo el precio del libro", "Que los buenos pagan más impuestos", "Que se necesita una licencia", "Que cuesta perder amigos"], "c": 0}, {"q": "(Footnote) ¿Qué respondió Dr. Samuel Johnson cuando le corrigieron su error?", "a": ["“Ignorancia, Madam. Pura ignorancia.”", "“Fui mal citado.”", "“Fue culpa del editor.”", "“No lo escribí yo.”"], "c": 0}, {"q": "(Footnote) ¿A quién culpa Schur de los errores filosóficos del libro?", "a": ["Al profesor Todd May", "A su editor", "A su esposa", "A Aristóteles"], "c": 0}];
+const MAX_WRONG_PER_QUESTION = 1; // a la 3ª falla: bloqueo
+const LOCK_MINUTES = 30;
+
+// ====== Estado ======
+let current = 0;
+let wrongThisQuestion = 0;
+let lockedInterval = null;
+
+// ====== Elementos ======
+const intro = document.getElementById('intro');
+const quiz = document.getElementById('quiz');
+const finalScr = document.getElementById('final');
+const lockScr = document.getElementById('lock');
+const progress = document.getElementById('progress');
+const qText = document.getElementById('qText');
+const options = document.getElementById('options');
+const feedback = document.getElementById('feedback');
+const nextBtn = document.getElementById('nextBtn');
+const retryBtn = document.getElementById('retryBtn');
+const startBtn = document.getElementById('startBtn');
+const checkAgain = document.getElementById('checkAgain');
+
+// ====== Sonidos (WebAudio para evitar archivos) ======
+let audioCtx;
+function getCtx(){ if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
+
+function playDing(){
+  const ctx = getCtx();
+  const o = ctx.createOscillator();
+  const g = ctx.createGain();
+  o.type = 'sine';
+  o.frequency.setValueAtTime(880, ctx.currentTime);
+  o.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime+0.15);
+  g.gain.setValueAtTime(0.0001, ctx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime+0.01);
+  g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime+0.25);
+  o.connect(g).connect(ctx.destination);
+  o.start(); o.stop(ctx.currentTime+0.3);
+}
+
+function playBuzzer(){
+  const ctx = getCtx();
+  const o1 = ctx.createOscillator();
+  const o2 = ctx.createOscillator();
+  const g = ctx.createGain();
+  o1.type='square'; o2.type='square';
+  o1.frequency.value = 220; o2.frequency.value = 180;
+  g.gain.value = 0.2;
+  o1.connect(g); o2.connect(g); g.connect(ctx.destination);
+  o1.start(); o2.start();
+  // vibrato "cómico"
+  const trem = ctx.createOscillator(); const tremGain = ctx.createGain();
+  trem.frequency.value = 8; tremGain.gain.value = 80;
+  trem.connect(tremGain);
+  tremGain.connect(o1.frequency);
+  tremGain.connect(o2.frequency);
+  trem.start();
+  setTimeout(()=>{ o1.stop(); o2.stop(); trem.stop(); }, 1200);
+}
+
+// ====== Bloqueo ======
+function setLock(minutes){
+  const until = Date.now() + minutes*60*1000;
+  localStorage.setItem('quizLockUntil', String(until));
+  showLock();
+}
+
+function showLock(){
+  clearInterval(lockedInterval);
+  intro.classList.remove('show');
+  quiz.classList.remove('show');
+  finalScr.classList.remove('show');
+  lockScr.classList.add('show');
+  const timer = document.getElementById('lockTimer');
+  function tick(){
+    const until = parseInt(localStorage.getItem('quizLockUntil')||'0',10);
+    const left = until - Date.now();
+    if(left <= 0){
+      clearInterval(lockedInterval);
+      localStorage.removeItem('quizLockUntil');
+      // volver a intro
+      lockScr.classList.remove('show');
+      intro.classList.add('show');
+      return;
+    }
+    const s = Math.floor(left/1000);
+    const m = Math.floor(s/60);
+    const ss = s%60;
+    timer.textContent = String(m).padStart(2,'0')+":"+String(ss).padStart(2,'0');
+  }
+  tick();
+  lockedInterval = setInterval(tick, 1000);
+}
+
+function checkLockOnLoad(){
+  const until = parseInt(localStorage.getItem('quizLockUntil')||'0',10);
+  if(until && until > Date.now()){
+    showLock();
+    return true;
+  }
+  return false;
+}
+
+// ====== Confeti minimal ======
+const confettiCanvas = document.getElementById('confetti');
+const cctx = confettiCanvas.getContext('2d');
+let confettiPieces = [];
+function resizeCanvas(){ confettiCanvas.width = window.innerWidth; confettiCanvas.height = window.innerHeight; }
+window.addEventListener('resize', resizeCanvas); resizeCanvas();
+
+function launchConfetti(){
+  confettiPieces = [];
+  for(let i=0;i<160;i++){
+    confettiPieces.push({
+      x: Math.random()*confettiCanvas.width,
+      y: -10*Math.random()*confettiCanvas.height/2,
+      size: 5+Math.random()*7,
+      color: `hsl(${Math.random()*360},100%,60%)`,
+      speed: 2+Math.random()*3,
+      rot: Math.random()*Math.PI,
+      rots: (Math.random()-.5)*0.2
+    });
+  }
+  requestAnimationFrame(confettiLoop);
+  setTimeout(()=> confettiPieces=[], 5000);
+}
+function confettiLoop(){
+  cctx.clearRect(0,0,confettiCanvas.width, confettiCanvas.height);
+  confettiPieces.forEach(p=>{
+    cctx.save();
+    cctx.translate(p.x, p.y);
+    cctx.rotate(p.rot);
+    cctx.fillStyle = p.color;
+    cctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
+    cctx.restore();
+    p.y += p.speed;
+    p.x += Math.sin(p.y*0.02)*1.2;
+    p.rot += p.rots;
+  });
+  if(confettiPieces.length) requestAnimationFrame(confettiLoop);
+}
+
+// ====== Render ======
+function setProgress(){
+  progress.textContent = current < QUESTIONS.length ? `Pregunta ${current+1} de ${QUESTIONS.length}` : '';
+}
+
+function renderQuestion(){
+  setProgress();
+  const data = QUESTIONS[current];
+  qText.textContent = data.q;
+  feedback.textContent = '';
+  feedback.className = 'feedback';
+  options.innerHTML = '';
+  nextBtn.disabled = true;
+  wrongThisQuestion = 0;
+  document.getElementById('retryBtn').classList.add('hidden');
+
+  data.a.forEach((opt, idx)=>{
+    const btn = document.createElement('button');
+    btn.className = 'btn option';
+    btn.textContent = opt;
+    btn.addEventListener('click', ()=> handleAnswer(idx === data.c, btn));
+    options.appendChild(btn);
+  });
+}
+
+function handleAnswer(correct, el){
+  if(correct){
+    playDing();
+    feedback.textContent = '✅ ¡Correcto!';
+    feedback.className = 'feedback ok';
+    nextBtn.disabled = false;
+    document.querySelectorAll('.option').forEach(b=>{
+      b.disabled = true;
+      if(b === el){ b.classList.add('correct'); }
+    });
+  } else {
+    wrongThisQuestion++;
+    playBuzzer();
+    feedback.textContent = '❌ Incorrecto. Intenta otra vez.';
+    feedback.className = 'feedback no';
+    el.classList.add('wrong');
+    // bloqueo global si supera límite
+    if(wrongThisQuestion > MAX_WRONG_PER_QUESTION){
+      setLock(LOCK_MINUTES);
+    }
+  }
+}
+
+function nextQuestion(){
+  current++;
+  if(current >= QUESTIONS.length){
+    // final
+    quiz.classList.remove('show');
+    finalScr.classList.add('show');
+    launchConfetti();
+    setProgress();
+  }else{
+    renderQuestion();
+  }
+}
+
+// ====== Eventos ======
+startBtn?.addEventListener('click', ()=>{
+  if(checkLockOnLoad()) return;
+  intro.classList.remove('show');
+  quiz.classList.add('show');
+  current = 0;
+  renderQuestion();
+});
+
+nextBtn.addEventListener('click', nextQuestion);
+checkAgain.addEventListener('click', ()=>{
+  if(!checkLockOnLoad()){
+    lockScr.classList.remove('show');
+    intro.classList.add('show');
+  }
+});
+
+// Autochequeo de bloqueo al cargar
+if(!checkLockOnLoad()){
+  // show intro por defecto
+  intro.classList.add('show');
+}
+</script>
+</body>
+</html>
